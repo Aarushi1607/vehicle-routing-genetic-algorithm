@@ -48,7 +48,7 @@ toolbox.register("mate",tools.cxPartialyMatched )
 toolbox.register("mutate", tools.mutShuffleIndexes, indpb=0.2)
 
 
-def main(pop_size=300, mutation_prob=0.2, tournament_size=3):
+def main(pop_size=300, mutation_prob=0.2, tournament_size=3,track_population=False):
 
     toolbox.register(
         "select",
@@ -60,27 +60,41 @@ def main(pop_size=300, mutation_prob=0.2, tournament_size=3):
     hof = tools.HallOfFame(1)  # Hall of Fame to store the best individual
 
     # Setup statistics to track
-    stats = tools.Statistics(lambda ind: ind.fitness.values)
+    stats = tools.Statistics(lambda ind: ind )
 
     stats.register(
-        "avg_distance",
-        lambda fits: np.mean([f[0] for f in fits])
+    "avg_distance",
+    lambda individuals: np.mean(
+        [ind.fitness.values[0] for ind in individuals]
+    )
     )
 
     stats.register(
-        "avg_imbalance",
-        lambda fits: np.mean([f[1] for f in fits])
+    "avg_imbalance",
+    lambda individuals: np.mean(
+        [ind.fitness.values[1] for ind in individuals]
     )
+)
 
     stats.register(
-        "min_distance",
-        lambda fits: np.min([f[0] for f in fits])
+    "min_distance",
+    lambda individuals: np.min(
+        [ind.fitness.values[0] for ind in individuals]
     )
+)
 
     stats.register(
-        "min_imbalance",
-        lambda fits: np.min([f[1] for f in fits])
+    "min_imbalance",
+    lambda individuals: np.min(
+        [ind.fitness.values[1] for ind in individuals]
     )
+)
+
+    if track_population:
+        stats.register(
+            "population",
+            lambda individuals: [list(ind) for ind in individuals]
+        )
 
     # Run the genetic algorithm
     pop ,logbook =   algorithms.eaSimple(
@@ -90,6 +104,7 @@ def main(pop_size=300, mutation_prob=0.2, tournament_size=3):
         mutation_prob,
         30,
         stats=stats,
-        halloffame=hof
+        halloffame=hof,
+        verbose=not track_population
         )
     return pop, logbook, hof

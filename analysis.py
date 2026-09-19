@@ -1,9 +1,9 @@
 import csv
 import time
 import numpy as np
+from itertools import combinations
 
 from vrp import main
-
 
 def run_experiment(pop_size, mutation_prob, tournament_size):
 
@@ -157,3 +157,85 @@ def convergence_analysis():
 
     print("Convergence analysis completed.")
     print("Results saved to convergence_analysis.csv")
+
+#using hamming distance to calculate  the divesity between every pair of individuals and calculate the average 
+def calculate_diversity(population):
+
+    total_distance = 0
+    pair_count = 0
+
+    for individual1, individual2 in combinations(population, 2):
+
+        distance = sum(
+            gene1 != gene2
+            for gene1, gene2 in zip(individual1, individual2)
+        )
+
+        total_distance += distance
+        pair_count += 1
+
+    if pair_count == 0:
+        return 0
+
+    return total_distance / pair_count
+
+def calculate_diversity(population):
+
+    total_distance = 0
+    pair_count = 0
+
+    for individual1, individual2 in combinations(population, 2):
+
+        distance = sum(
+            gene1 != gene2
+            for gene1, gene2 in zip(individual1, individual2)
+        )
+
+        total_distance += distance
+        pair_count += 1
+
+    if pair_count == 0:
+        return 0
+
+    return total_distance / pair_count
+
+def save_diversity_results(results):
+
+    with open("diversity_analysis.csv", "w", newline="") as file:
+
+        writer = csv.writer(file)
+
+        writer.writerow([
+            "generation",
+            "average_diversity"
+        ])
+
+        writer.writerows(results)
+
+def diversity_analysis():
+
+    pop, logbook, hof = main(
+        pop_size=300,
+        mutation_prob=0.2,
+        tournament_size=3,
+        track_population=True
+    )
+
+    results = []
+
+    for record in logbook:
+
+        generation = record["gen"]
+        population = record["population"]
+
+        diversity = calculate_diversity(population)
+
+        results.append([
+            generation,
+            diversity
+        ])
+
+    save_diversity_results(results)
+
+    print("Diversity analysis completed.")
+    print("Results saved to diversity_analysis.csv")

@@ -58,3 +58,26 @@ def plot_convergence():
     plt.legend()
 
     plt.show()
+
+def plot_diversity():
+
+    data = np.genfromtxt(
+        "diversity_analysis.csv",
+        delimiter=",",
+        names=True
+    )
+
+    plt.figure()
+
+    plt.plot(
+        data["generation"],
+        data["average_diversity"],
+        marker="o"
+    )
+
+    plt.xlabel("Generation")
+    plt.ylabel("Average Diversity")
+    plt.title("Solution Diversity Over Generations")
+    plt.grid(True)
+
+    plt.show()
