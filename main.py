@@ -103,21 +103,21 @@ def main(pop_size=300, mutation_prob=0.2, tournament_size=3):
     )
 
     # Run the genetic algorithm
-    algorithms.eaSimple(
-    pop,
-    toolbox,
-    0.7,
-    mutation_prob,
-    30,
-    stats=stats,
-    halloffame=hof
-    )
-    return pop, stats, hof
+    pop ,logbook =   algorithms.eaSimple(
+        pop,
+        toolbox,
+        0.7,
+        mutation_prob,
+        30,
+        stats=stats,
+        halloffame=hof
+        )
+    return pop, logbook, hof
 
 def run_experiment(pop_size, mutation_prob, tournament_size):
     start_time = time.time()
 
-    pop, stats, hof = main(
+    pop, logbook, hof = main(
         pop_size=pop_size,
         mutation_prob=mutation_prob,
         tournament_size=tournament_size
@@ -132,6 +132,29 @@ def run_experiment(pop_size, mutation_prob, tournament_size):
     runtime = end_time - start_time
 
     return total_distance, imbalance, runtime
+
+def convergence_analysis():
+    pop, logbook, hof = main(
+        pop_size=300,
+        mutation_prob=0.2,
+        tournament_size=3
+    )
+
+    results = []
+
+    for record in logbook:
+        results.append([
+            record["gen"],
+            record["avg_distance"],
+            record["min_distance"],
+            record["avg_imbalance"],
+            record["min_imbalance"]
+        ])
+
+    save_convergence_results(results)
+
+    print("Convergence analysis completed.")
+    print("Results saved to convergence_analysis.csv")
 
 def save_results(results):
     with open("parameter_tuning.csv", "w", newline="") as file:
@@ -148,6 +171,65 @@ def save_results(results):
         ])
 
         writer.writerows(results)
+
+def save_convergence_results(results):
+    with open("convergence_analysis.csv", "w", newline="") as file:
+        writer = csv.writer(file)
+
+        writer.writerow([
+            "generation",
+            "avg_distance",
+            "min_distance",
+            "avg_imbalance",
+            "min_imbalance"
+        ])
+
+        writer.writerows(results)
+
+def plot_convergence():
+    data = np.genfromtxt(
+        "convergence_analysis.csv",
+        delimiter=",",
+        names=True
+    )
+
+    generations = data["generation"]
+
+    # Distance convergence
+    plt.figure()
+    plt.plot(
+        generations,
+        data["avg_distance"],
+        label="Average Distance"
+    )
+    plt.plot(
+        generations,
+        data["min_distance"],
+        label="Minimum Distance"
+    )
+    plt.xlabel("Generation")
+    plt.ylabel("Distance")
+    plt.title("Distance Convergence")
+    plt.legend()
+    plt.show()
+
+    # Imbalance convergence
+    plt.figure()
+    plt.plot(
+        generations,
+        data["avg_imbalance"],
+        label="Average Imbalance"
+    )
+    plt.plot(
+        generations,
+        data["min_imbalance"],
+        label="Minimum Imbalance"
+    )
+    plt.xlabel("Generation")
+    plt.ylabel("Route Imbalance")
+    plt.title("Route Imbalance Convergence")
+    plt.legend()
+    plt.show()
 
 def parameter_tuning():
     results = []
@@ -213,5 +295,9 @@ def parameter_tuning():
     print("Parameter tuning completed.")
     print("Results saved to parameter_tuning.csv")
 
+# if __name__ == "__main__":
+#     parameter_tuning()
+
 if __name__ == "__main__":
-    parameter_tuning()
+    convergence_analysis()
+    plot_convergence()
