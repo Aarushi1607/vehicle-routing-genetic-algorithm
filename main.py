@@ -1,8 +1,11 @@
 import random
+import csv
 import numpy as np
+import time
 import matplotlib.pyplot as plt
 from deap import creator, base, tools ,algorithms
 
+random.seed(42)
 num_locations = 10
 locations = [(random.randint(0, 100), random.randint(0, 100))
              for _ in range(num_locations)]# ggenerates 10 random (x,y) coordinates
@@ -65,24 +68,150 @@ def plot_routes(individual, title="Routes"):
     plt.ylabel('Y Coordinate')
     plt.show()
 
-def main():
-    random.seed(42)  # Seed for reproducibility
-    pop = toolbox.population(n=300)  # Generate initial population
+def main(pop_size=300, mutation_prob=0.2, tournament_size=3):
+
+    toolbox.register(
+        "select",
+        tools.selTournament,
+        tournsize=tournament_size
+    )
+
+    pop = toolbox.population(n=pop_size)
     hof = tools.HallOfFame(1)  # Hall of Fame to store the best individual
 
     # Setup statistics to track
     stats = tools.Statistics(lambda ind: ind.fitness.values)
-    stats.register("avg", np.mean)
-    stats.register("min", np.min)
+
+    stats.register(
+        "avg_distance",
+        lambda fits: np.mean([f[0] for f in fits])
+    )
+
+    stats.register(
+        "avg_imbalance",
+        lambda fits: np.mean([f[1] for f in fits])
+    )
+
+    stats.register(
+        "min_distance",
+        lambda fits: np.min([f[0] for f in fits])
+    )
+
+    stats.register(
+        "min_imbalance",
+        lambda fits: np.min([f[1] for f in fits])
+    )
 
     # Run the genetic algorithm
-    algorithms.eaSimple(pop, toolbox, 0.7, 0.2, 300, stats=stats, halloffame=hof)
+    algorithms.eaSimple(
+    pop,
+    toolbox,
+    0.7,
+    mutation_prob,
+    30,
+    stats=stats,
+    halloffame=hof
+    )
     return pop, stats, hof
 
-if __name__ == "__main__":
-    pop, stats, hof = main()
+def run_experiment(pop_size, mutation_prob, tournament_size):
+    start_time = time.time()
+
+    pop, stats, hof = main(
+        pop_size=pop_size,
+        mutation_prob=mutation_prob,
+        tournament_size=tournament_size
+    )
+
+    end_time = time.time()
+
     best = hof[0]
-    print("Best route:", best)
-    print("Total distance:", best.fitness.values[0])
-    print("Route imbalance:", best.fitness.values[1])
-    plot_routes(best, "Best VRP Solution")
+
+    total_distance = best.fitness.values[0]
+    imbalance = best.fitness.values[1]
+    runtime = end_time - start_time
+
+    return total_distance, imbalance, runtime
+
+def save_results(results):
+    with open("parameter_tuning.csv", "w", newline="") as file:
+        writer = csv.writer(file)
+
+        writer.writerow([
+            "experiment",
+            "population_size",
+            "mutation_probability",
+            "tournament_size",
+            "total_distance",
+            "imbalance",
+            "runtime"
+        ])
+
+        writer.writerows(results)
+
+def parameter_tuning():
+    results = []
+
+    population_sizes = [100, 300, 500]
+
+    for size in population_sizes:
+        distance, imbalance, runtime = run_experiment(
+            pop_size=size,
+            mutation_prob=0.2,
+            tournament_size=3
+        )
+
+        results.append([
+            "population_size",
+            size,
+            0.2,
+            3,
+            distance,
+            imbalance,
+            runtime
+        ])
+
+    mutation_probabilities = [0.1, 0.2, 0.4]
+
+    for mutation in mutation_probabilities:
+        distance, imbalance, runtime = run_experiment(
+            pop_size=300,
+            mutation_prob=mutation,
+            tournament_size=3
+        )
+
+        results.append([
+            "mutation_probability",
+            300,
+            mutation,
+            3,
+            distance,
+            imbalance,
+            runtime
+        ])
+
+    tournament_sizes = [2, 3, 5]
+
+    for tournament in tournament_sizes:
+        distance, imbalance, runtime = run_experiment(
+            pop_size=300,
+            mutation_prob=0.2,
+            tournament_size=tournament
+        )
+
+        results.append([
+            "tournament_size",
+            300,
+            0.2,
+            tournament,
+            distance,
+            imbalance,
+            runtime
+        ])
+
+    save_results(results)
+    print("Parameter tuning completed.")
+    print("Results saved to parameter_tuning.csv")
+
+if __name__ == "__main__":
+    parameter_tuning()
